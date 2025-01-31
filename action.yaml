@@ -69,9 +69,9 @@ runs:
       shell: bash
       run: |
         for image_tag in ${{ inputs.image_tags }}; do 
-		name=${{ inputs.ecr_account_id }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com/${{ inputs.namespace  }}/${{ inputs.image_name }}:$image_tag"
-                echo "Tagging ${{ inputs.source_tag }} as $image_tag "
-                docker tag ${{ inputs.source_tag }} $image_tag
-                echo "Pushing $image_tag"
-		docker push $name
+          name=${{ inputs.ecr_account_id }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com/${{ inputs.namespace  }}/${{ inputs.image_name }}:$image_tag"
+          echo "Tagging ${{ inputs.source_tag }} as $image_tag "
+          docker tag ${{ inputs.source_tag }} $image_tag
+          echo "Pushing $image_tag"
+          docker push $name
         done
