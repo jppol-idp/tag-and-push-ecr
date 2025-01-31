@@ -1,0 +1,77 @@
+
+name: deploy-ecr
+run-name: Deploy ECR
+inputs:
+  source_tag:
+    description: Source tag or hash to use.
+    type: string
+    required: true
+  image_name:
+    description: The image name. Will be appended to namespace.
+    required: true
+    type: string
+  image_tags:
+    description: A space separated list of desired tags. Repository name etc will be prepended.
+    required: true
+    type: string
+  docker_folder:
+    description: When building the action will step into this folder and run a docker build command.
+    required: false 
+    default: .
+    type: string
+  namespace:
+    description: The namespace or prefix to use. Final image name will be a composite of this and the image name joined by a slash.
+    required: true
+    type: string
+  ecr_account_id:
+    description: The account id to push to. For internal use at jppol default value should be used.
+    required: false
+    type: string
+    default: '354918371398'
+  aws_region: 
+    description: For internal use at jppol default value should be used.
+    required: false
+    type: string
+    default: eu-west-1
+outputs:
+  fully_qualified_name:
+    value: ${{ steps.full_image_name.outputs.name }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::${{ inputs.ecr_account_id }}:role/github-access-${{ inputs.namespace }}
+        aws-region: ${{ inputs.aws_region }}
+        role-skip-session-tagging: true
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+      with:
+        registries: ${{ inputs.ecr_account_id }}
+    - name: Create AWS ECR repository
+      if: ${{ inputs.run_push == 'true' }}
+      uses: uspacy/aws-ecr-action@v1
+      with:
+        repositoryName: ${{ inputs.namespace }}/${{ inputs.image_name }}
+        scanOnPush: true
+        imageTagMutability: IMMUTABLE
+    - name: Create full image name
+      id: full_image_name
+      shell: bash
+      run: |
+    - name: Push image
+      if: ${{ inputs.run_push == 'true' }}
+      id: push-image
+      shell: bash
+      run: |
+        for image_tag in ${{ inputs.image_tags }}; do 
+		name=${{ inputs.ecr_account_id }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com/${{ inputs.namespace  }}/${{ inputs.image_name }}:$image_tag"
+                echo "Tagging ${{ inputs.source_tag }} as $image_tag "
+                docker tag ${{ inputs.source_tag }} $image_tag
+                echo "Pushing $image_tag"
+		docker push $name
+        done
