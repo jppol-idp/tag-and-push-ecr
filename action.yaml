@@ -1,4 +1,4 @@
-
+description: tags and pushes containers to JP/Politikens Hus IDP ECR
 name: deploy-ecr
 run-name: Deploy ECR
 inputs:
