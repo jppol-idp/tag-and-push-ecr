@@ -1,4 +1,5 @@
 description: tags and pushes containers to JP/Politikens Hus IDP ECR
+icon: package
 name: deploy-ecr
 run-name: Deploy ECR
 inputs:
