@@ -53,7 +53,6 @@ runs:
       with:
         registries: ${{ inputs.ecr_account_id }}
     - name: Create AWS ECR repository
-      if: ${{ inputs.run_push == 'true' }}
       uses: uspacy/aws-ecr-action@v1
       with:
         repositoryName: ${{ inputs.namespace }}/${{ inputs.image_name }}
@@ -64,14 +63,13 @@ runs:
       shell: bash
       run: |
     - name: Push image
-      if: ${{ inputs.run_push == 'true' }}
       id: push-image
       shell: bash
       run: |
         for image_tag in ${{ inputs.image_tags }}; do 
-          name=${{ inputs.ecr_account_id }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com/${{ inputs.namespace  }}/${{ inputs.image_name }}:$image_tag"
+          name="${{ inputs.ecr_account_id }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com/${{ inputs.namespace  }}/${{ inputs.image_name }}:$image_tag"
           echo "Tagging ${{ inputs.source_tag }} as $image_tag "
-          docker tag ${{ inputs.source_tag }} $image_tag
+          docker tag ${{ inputs.source_tag }} $name
           echo "Pushing $image_tag"
           docker push $name
         done
