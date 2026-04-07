@@ -42,7 +42,7 @@ runs:
   using: "composite"
   steps:
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@v6
       with:
         role-to-assume: arn:aws:iam::${{ inputs.ecr_account_id }}:role/github-access-${{ inputs.namespace }}
         aws-region: ${{ inputs.aws_region }}
