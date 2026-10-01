@@ -148,7 +148,11 @@ runs:
       id: push-image
       shell: bash
       run: |
-        for image_tag in ${{ inputs.image_tags }}; do
+        # In addition to the user-defined tags, always push a tag identifying the
+        # origin of this image (github-org, github-repo and the workflow run id),
+        # so any pushed image can be traced back to the run that produced it.
+        origin_tag="${GITHUB_REPOSITORY//\//-}-${GITHUB_RUN_ID}"
+        for image_tag in ${{ inputs.image_tags }} "$origin_tag"; do
           name="${{ inputs.ecr_account_id }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com/${{ inputs.namespace  }}/${{ inputs.image_name }}:$image_tag"
           echo "LAST_ATTEMPTED_TAG=$image_tag" >> "$GITHUB_ENV"
           echo "Tagging ${{ inputs.source_tag }} as $image_tag "
