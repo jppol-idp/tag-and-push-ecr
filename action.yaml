@@ -48,6 +48,7 @@ runs:
         role-to-assume: arn:aws:iam::${{ inputs.ecr_account_id }}:role/github-access-${{ inputs.namespace }}
         aws-region: ${{ inputs.aws_region }}
         role-skip-session-tagging: true
+        retry-max-attempts: 5
     - name: Configure AWS credentials failure summary
       if: failure() && steps.configure-aws-credentials.outcome == 'failure'
       shell: bash
