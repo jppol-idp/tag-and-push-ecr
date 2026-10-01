@@ -48,5 +48,10 @@ jobs:
 ```
 In this example we get a push to `354918371398.dkr.ecr.eu-west-1.amazonaws.com/idp/testing-ecr-tag`
 
+# Error diagnostics
+The calling job must grant `permissions: id-token: write` (needed to request a GitHub OIDC
+token) - this is checked explicitly as the first step. If any of the AWS credential, ECR
+login/repository, or tag/push steps fail, a short diagnosis with likely causes is written to
+the job's Summary tab (`GITHUB_STEP_SUMMARY`) in addition to the normal log output.
 
 
