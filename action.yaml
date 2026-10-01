@@ -41,6 +41,36 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Check for id-token permission
+      id: check-id-token
+      shell: bash
+      run: |
+        if [ -z "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ] || [ -z "$ACTIONS_ID_TOKEN_REQUEST_URL" ]; then
+          echo "::error::Missing GitHub OIDC id-token permission - see job summary for details."
+          exit 1
+        fi
+    - name: Check for id-token permission failure summary
+      if: failure() && steps.check-id-token.outcome == 'failure'
+      shell: bash
+      run: |
+        {
+          echo "### ❌ Missing GitHub OIDC id-token permission"
+          echo ""
+          echo "- **Namespace:** \`${{ inputs.namespace }}\`"
+          echo "- **Image name:** \`${{ inputs.image_name }}\`"
+          echo ""
+          echo "This action needs to request a GitHub OIDC token to assume the AWS IAM role for namespace"
+          echo "\`${{ inputs.namespace }}\`, but the calling workflow/job did not grant \`id-token: write\`"
+          echo "permission. This is unrelated to whether your repository is authorized for this namespace."
+          echo ""
+          echo "Add this to the job (or workflow) that calls this action:"
+          echo '```yaml'
+          echo "permissions:"
+          echo "  id-token: write"
+          echo "  contents: read"
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+
     - name: Configure AWS credentials
       id: configure-aws-credentials
       uses: aws-actions/configure-aws-credentials@v6
