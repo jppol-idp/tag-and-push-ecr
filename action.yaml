@@ -62,7 +62,7 @@ runs:
           echo "Likely causes:"
           echo "- The IAM role's trust policy does not allow this repository (via GitHub's OIDC provider) to assume it."
           echo "- The calling workflow is missing \`permissions: id-token: write\`."
-          echo "- \`namespace\` does not match the role name convention \`github-access-<namespace>\` set up for this account."
+          echo "- \`namespace\` (\`${{ inputs.namespace }}\`) does not match the role name convention \`github-access-<namespace>\` set up for this account."
         } >> "$GITHUB_STEP_SUMMARY"
 
     - name: Login to Amazon ECR
@@ -104,7 +104,7 @@ runs:
           echo "Likely causes:"
           echo "- The assumed role is missing \`ecr:CreateRepository\`, \`ecr:DescribeRepositories\`, or related permissions."
           echo "- The repository already exists with a conflicting \`imageTagMutability\` setting (this action requires \`IMMUTABLE\`)."
-          echo "- \`namespace\`/\`image_name\` produces an invalid ECR repository name."
+          echo "- \`namespace\` (\`${{ inputs.namespace }}\`)/\`image_name\` produces an invalid ECR repository name."
         } >> "$GITHUB_STEP_SUMMARY"
 
     - name: Create full image name
