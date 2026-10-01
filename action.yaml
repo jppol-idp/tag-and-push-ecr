@@ -17,7 +17,7 @@ inputs:
     type: string
   docker_folder:
     description: When building the action will step into this folder and run a docker build command.
-    required: false 
+    required: false
     default: .
     type: string
   namespace:
@@ -29,7 +29,7 @@ inputs:
     required: false
     type: string
     default: '354918371398'
-  aws_region: 
+  aws_region:
     description: For internal use at jppol default value should be used.
     required: false
     type: string
@@ -42,35 +42,102 @@ runs:
   using: "composite"
   steps:
     - name: Configure AWS credentials
+      id: configure-aws-credentials
       uses: aws-actions/configure-aws-credentials@v6
       with:
         role-to-assume: arn:aws:iam::${{ inputs.ecr_account_id }}:role/github-access-${{ inputs.namespace }}
         aws-region: ${{ inputs.aws_region }}
         role-skip-session-tagging: true
+    - name: Configure AWS credentials failure summary
+      if: failure() && steps.configure-aws-credentials.outcome == 'failure'
+      shell: bash
+      run: |
+        {
+          echo "### ❌ Failed to configure AWS credentials"
+          echo ""
+          echo "- **Role ARN:** \`arn:aws:iam::${{ inputs.ecr_account_id }}:role/github-access-${{ inputs.namespace }}\`"
+          echo "- **Region:** \`${{ inputs.aws_region }}\`"
+          echo ""
+          echo "Likely causes:"
+          echo "- The IAM role's trust policy does not allow this repository (via GitHub's OIDC provider) to assume it."
+          echo "- The calling workflow is missing \`permissions: id-token: write\`."
+          echo "- \`namespace\` does not match the role name convention \`github-access-<namespace>\` set up for this account."
+        } >> "$GITHUB_STEP_SUMMARY"
 
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
       with:
         registries: ${{ inputs.ecr_account_id }}
+    - name: Login to Amazon ECR failure summary
+      if: failure() && steps.login-ecr.outcome == 'failure'
+      shell: bash
+      run: |
+        {
+          echo "### ❌ Failed to log in to Amazon ECR"
+          echo ""
+          echo "- **Account:** \`${{ inputs.ecr_account_id }}\`"
+          echo "- **Region:** \`${{ inputs.aws_region }}\`"
+          echo ""
+          echo "Likely causes:"
+          echo "- The assumed role is missing \`ecr:GetAuthorizationToken\` permission."
+          echo "- \`ecr_account_id\` or \`aws_region\` does not match where the registry actually lives."
+        } >> "$GITHUB_STEP_SUMMARY"
+
     - name: Create AWS ECR repository
+      id: create-ecr-repo
       uses: uspacy/aws-ecr-action@v1
       with:
         repositoryName: ${{ inputs.namespace }}/${{ inputs.image_name }}
         scanOnPush: true
         imageTagMutability: IMMUTABLE
+    - name: Create AWS ECR repository failure summary
+      if: failure() && steps.create-ecr-repo.outcome == 'failure'
+      shell: bash
+      run: |
+        {
+          echo "### ❌ Failed to create (or verify) the ECR repository"
+          echo ""
+          echo "- **Repository:** \`${{ inputs.namespace }}/${{ inputs.image_name }}\`"
+          echo ""
+          echo "Likely causes:"
+          echo "- The assumed role is missing \`ecr:CreateRepository\`, \`ecr:DescribeRepositories\`, or related permissions."
+          echo "- The repository already exists with a conflicting \`imageTagMutability\` setting (this action requires \`IMMUTABLE\`)."
+          echo "- \`namespace\`/\`image_name\` produces an invalid ECR repository name."
+        } >> "$GITHUB_STEP_SUMMARY"
+
     - name: Create full image name
       id: full_image_name
       shell: bash
       run: |
+        first_tag=$(echo "${{ inputs.image_tags }}" | awk '{print $1}')
+        echo "name=${{ inputs.ecr_account_id }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com/${{ inputs.namespace }}/${{ inputs.image_name }}:$first_tag" > $GITHUB_OUTPUT
+
     - name: Push image
       id: push-image
       shell: bash
       run: |
-        for image_tag in ${{ inputs.image_tags }}; do 
+        for image_tag in ${{ inputs.image_tags }}; do
           name="${{ inputs.ecr_account_id }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com/${{ inputs.namespace  }}/${{ inputs.image_name }}:$image_tag"
+          echo "LAST_ATTEMPTED_TAG=$image_tag" >> "$GITHUB_ENV"
           echo "Tagging ${{ inputs.source_tag }} as $image_tag "
           docker tag ${{ inputs.source_tag }} $name
           echo "Pushing $image_tag"
           docker push $name
         done
+    - name: Push image failure summary
+      if: failure() && steps.push-image.outcome == 'failure'
+      shell: bash
+      run: |
+        {
+          echo "### ❌ Docker tag/push failed"
+          echo ""
+          echo "- **Source tag:** \`${{ inputs.source_tag }}\`"
+          echo "- **Requested tags:** \`${{ inputs.image_tags }}\`"
+          echo "- **Tag being processed when it failed:** \`${LAST_ATTEMPTED_TAG:-unknown}\`"
+          echo ""
+          echo "Likely causes:"
+          echo "- \`source_tag\` does not match an image already present on the runner (check how/where it was built)."
+          echo "- The assumed role is missing ECR push permissions (e.g. \`ecr:PutImage\`, \`ecr:InitiateLayerUpload\`)."
+          echo "- The failing tag already exists and the repository has \`imageTagMutability: IMMUTABLE\` - use a different tag."
+        } >> "$GITHUB_STEP_SUMMARY"
