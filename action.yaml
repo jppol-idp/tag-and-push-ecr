@@ -207,4 +207,11 @@ runs:
           for image_tag in $IMAGE_TAGS "$origin_tag"; do
             echo "- \`${registry}/${repository}:${image_tag}\`"
           done
+          echo "## To reference for use with idp-advanced chart"
+          echo "\`\`\`helm"
+          echo "image: "
+          echo "  repository: ${registry}/${repository}"
+          echo "  pullPolicy: IfNotPresent"
+          echo "  tag: \"${{inputs.image_tags}}\""
+          echo "\`\`\`"
         } >> "$GITHUB_STEP_SUMMARY"
