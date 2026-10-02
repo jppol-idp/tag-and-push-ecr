@@ -56,6 +56,9 @@ runs:
         {
           echo "### ❌ Missing GitHub OIDC id-token permission"
           echo ""
+          echo "## Please check that \`${{ inputs.namespace }}\` is a valid namespace for repository \`${ GITHUB_REPOSITORY }\`"
+          echo "The namespace given for input must match a value agreed with the IDP team."
+          echo ""
           echo "- **Namespace:** \`${{ inputs.namespace }}\`"
           echo "- **Image name:** \`${{ inputs.image_name }}\`"
           echo ""
