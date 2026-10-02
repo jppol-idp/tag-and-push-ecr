@@ -56,12 +56,6 @@ runs:
         {
           echo "### ❌ Missing GitHub OIDC id-token permission"
           echo ""
-          echo "## Please check that \`${{ inputs.namespace }}\` is a valid namespace for repository \`${ GITHUB_REPOSITORY }\`"
-          echo "The namespace given for input must match a value agreed with the IDP team."
-          echo ""
-          echo "- **Namespace:** \`${{ inputs.namespace }}\`"
-          echo "- **Image name:** \`${{ inputs.image_name }}\`"
-          echo ""
           echo "This action needs to request a GitHub OIDC token to assume the AWS IAM role for namespace"
           echo "\`${{ inputs.namespace }}\`, but the calling workflow/job did not grant \`id-token: write\`"
           echo "permission. This is unrelated to whether your repository is authorized for this namespace."
@@ -88,6 +82,12 @@ runs:
       run: |
         {
           echo "### ❌ Failed to configure AWS credentials"
+          echo ""
+          echo "## Please check that \`${{ inputs.namespace }}\` is a valid namespace for repository \`${ GITHUB_REPOSITORY }\`"
+          echo "The namespace given for input must match a value agreed with the IDP team."
+          echo ""
+          echo "- **Namespace:** \`${{ inputs.namespace }}\`"
+          echo "- **Image name:** \`${{ inputs.image_name }}\`"
           echo ""
           echo "- **Role ARN:** \`arn:aws:iam::${{ inputs.ecr_account_id }}:role/github-access-${{ inputs.namespace }}\`"
           echo "- **Region:** \`${{ inputs.aws_region }}\`"
