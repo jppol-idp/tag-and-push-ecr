@@ -176,3 +176,33 @@ runs:
           echo "- The assumed role is missing ECR push permissions (e.g. \`ecr:PutImage\`, \`ecr:InitiateLayerUpload\`)."
           echo "- The failing tag already exists and the repository has \`imageTagMutability: IMMUTABLE\` - use a different tag."
         } >> "$GITHUB_STEP_SUMMARY"
+
+    # No `if:` means this only runs when every previous step succeeded.
+    - name: Pushed image summary
+      shell: bash
+      env:
+        ECR_ACCOUNT_ID: ${{ inputs.ecr_account_id }}
+        AWS_REGION_INPUT: ${{ inputs.aws_region }}
+        NAMESPACE: ${{ inputs.namespace }}
+        IMAGE_NAME: ${{ inputs.image_name }}
+        IMAGE_TAGS: ${{ inputs.image_tags }}
+      run: |
+        registry="${ECR_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_INPUT}.amazonaws.com"
+        repository="${NAMESPACE}/${IMAGE_NAME}"
+        origin_tag="${GITHUB_REPOSITORY//\//-}-${GITHUB_RUN_ID}"
+        {
+          echo "### ✅ Image pushed to ECR"
+          echo ""
+          echo "- **Image name:** \`${IMAGE_NAME}\`"
+          echo "- **Namespace:** \`${NAMESPACE}\`"
+          echo "- **Repository:** \`${repository}\`"
+          echo "- **Registry:** \`${registry}\`"
+          echo "- **Account:** \`${ECR_ACCOUNT_ID}\`"
+          echo "- **Region:** \`${AWS_REGION_INPUT}\`"
+          echo "- **Console:** https://${AWS_REGION_INPUT}.console.aws.amazon.com/ecr/repositories/private/${ECR_ACCOUNT_ID}/${repository}?region=${AWS_REGION_INPUT}"
+          echo ""
+          echo "**Pushed images:**"
+          for image_tag in $IMAGE_TAGS "$origin_tag"; do
+            echo "- \`${registry}/${repository}:${image_tag}\`"
+          done
+        } >> "$GITHUB_STEP_SUMMARY"
